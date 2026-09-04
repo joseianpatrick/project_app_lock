@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="focus_background">#F9F8FF</color>
+    <color name="focus_surface">#EFEDFF</color>
+    <color name="focus_primary">#4F46E5</color>
+    <color name="focus_on_primary">#FFFFFF</color>
+    <color name="focus_text_primary">#1D1B20</color>
+    <color name="focus_text_secondary">#49454F</color>
+</resources>
