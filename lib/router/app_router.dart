@@ -3,6 +3,7 @@ import 'package:project_app_lock/features/home/home_screen.dart';
 import 'package:project_app_lock/features/focus_session/focus_session_screen.dart';
 import 'package:project_app_lock/features/protected_apps/protected_apps_screen.dart';
 import 'package:project_app_lock/features/tasks/task_screen.dart';
+import 'package:project_app_lock/features/tasks/task_editor_screen.dart';
 import 'package:project_app_lock/shared/widgets/app_shell.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -19,6 +20,19 @@ final GoRouter appRouter = GoRouter(
               path: 'tasks',
               name: 'tasks',
               builder: (context, state) => const TaskScreen(),
+              routes: <RouteBase>[
+                GoRoute(
+                  path: 'new',
+                  name: 'task-create',
+                  builder: (context, state) => const TaskEditorScreen(),
+                ),
+                GoRoute(
+                  path: ':taskId/edit',
+                  name: 'task-edit',
+                  builder: (context, state) =>
+                      TaskEditorScreen(taskId: state.pathParameters['taskId']),
+                ),
+              ],
             ),
             GoRoute(
               path: 'apps-to-lock',

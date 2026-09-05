@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:project_app_lock/data/repository/repository.dart';
 import 'package:project_app_lock/data/task_model.dart';
+import 'package:project_app_lock/data/study_content_model.dart';
 
 final class FakeTaskRepository implements Repository<TaskModel> {
   final Map<String, TaskModel> _items = <String, TaskModel>{};
@@ -46,6 +47,9 @@ final class FakeTaskRepository implements Repository<TaskModel> {
       completedAt: data.containsKey('completedAt')
           ? data['completedAt'] as DateTime?
           : current.completedAt,
+      studyContent: data.containsKey('studyContent')
+          ? data['studyContent'] as StudyContentModel?
+          : current.studyContent,
     );
     _emit();
   }

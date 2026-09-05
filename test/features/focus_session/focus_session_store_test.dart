@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:project_app_lock/data/lock_session_model.dart';
 import 'package:project_app_lock/data/protected_app_model.dart';
+import 'package:project_app_lock/data/study_content_model.dart';
 import 'package:project_app_lock/data/task_model.dart';
 import 'package:project_app_lock/features/focus_session/focus_session_store.dart';
 import 'package:project_app_lock/features/focus_session/lock_session_repository.dart';
@@ -23,6 +24,14 @@ void main() {
     title: 'Write report',
     durationMinutes: 25,
     createdAt: DateTime.utc(2026, 9, 4),
+    studyContent: const StudyContentModel(
+      format: StudyFormat.quiz,
+      sourceNotes: 'Report notes',
+      sourceId: 'manual',
+      items: <StudyItemModel>[
+        StudyItemModel(id: 'one', prompt: 'Prompt', answer: 'Answer'),
+      ],
+    ),
   );
 
   setUp(() async {
@@ -60,6 +69,15 @@ void main() {
     selectionRepository.values.clear();
 
     expect(await store.validateStart(task), 'Select at least one app to lock.');
+  });
+
+  test('requires study content before starting a legacy task', () async {
+    final legacyTask = task.copyWith(studyContent: null);
+
+    expect(
+      await store.validateStart(legacyTask),
+      'Add study content before starting this task.',
+    );
   });
 
   test('start snapshots task, apps, and end time', () async {

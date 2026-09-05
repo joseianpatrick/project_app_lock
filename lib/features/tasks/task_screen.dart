@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:go_router/go_router.dart';
+import 'package:project_app_lock/data/study_content_model.dart';
 import 'package:project_app_lock/data/task_model.dart';
 import 'package:project_app_lock/dependency/dependency_manager.dart';
 import 'package:project_app_lock/features/focus_session/focus_session_store.dart';
@@ -9,7 +10,6 @@ import 'package:project_app_lock/shared/widgets/app_scaffold.dart';
 
 class TaskScreen extends StatefulWidget {
   const TaskScreen({super.key});
-
   @override
   State<TaskScreen> createState() => _TaskScreenState();
 }
@@ -17,20 +17,11 @@ class TaskScreen extends StatefulWidget {
 class _TaskScreenState extends State<TaskScreen> {
   late final TaskStore _store;
   late final FocusSessionStore _sessionStore;
-
   @override
   void initState() {
     super.initState();
     _store = sl<TaskStore>()..initialize();
     _sessionStore = sl<FocusSessionStore>()..initialize();
-  }
-
-  Future<void> _openTaskDialog([TaskModel? task]) async {
-    _store.clearFormError();
-    await showAdaptiveDialog<void>(
-      context: context,
-      builder: (context) => _TaskFormDialog(store: _store, task: task),
-    );
   }
 
   Future<void> _startFocus(TaskModel task) async {
@@ -42,15 +33,12 @@ class _TaskScreenState extends State<TaskScreen> {
       ).showSnackBar(SnackBar(content: Text(validation)));
       return;
     }
-    final end = DateTime.now().add(Duration(minutes: task.durationMinutes));
-    final selectedCount = await _sessionStore.getSelectedAppCount();
-    if (!mounted) return;
     final confirmed = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Start focus?'),
         content: Text(
-          '${task.title}\n\n$selectedCount selected ${selectedCount == 1 ? 'app' : 'apps'} will be locked until ${TimeOfDay.fromDateTime(end).format(context)}.',
+          '${task.title}\n\nYour selected apps will be locked for ${task.durationMinutes} minutes.',
         ),
         actions: <Widget>[
           TextButton(
@@ -64,314 +52,130 @@ class _TaskScreenState extends State<TaskScreen> {
         ],
       ),
     );
-    if (confirmed != true) return;
-    final started = await _sessionStore.start(task);
-    if (!mounted) return;
-    if (started) {
+    if (confirmed == true && await _sessionStore.start(task) && mounted) {
       context.goNamed('focus-session');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_sessionStore.errorMessage ?? 'Could not start focus.'),
-        ),
-      );
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return AppScaffold(
-      title: 'Tasks',
-      onBackPressed: () => context.goNamed('home'),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openTaskDialog,
-        icon: const Icon(Icons.add),
-        label: const Text('Add task'),
-      ),
-      body: Observer(
-        builder: (context) {
-          if (_store.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (_store.errorMessage != null && _store.tasks.isEmpty) {
-            return _TaskMessage(
-              icon: Icons.error_outline,
-              message: _store.errorMessage!,
-              actionLabel: 'Try again',
-              onAction: _store.initialize,
-            );
-          }
-          if (_store.isEmpty) {
-            return const _TaskMessage(
-              icon: Icons.checklist_outlined,
-              message: 'No tasks yet. Add a timed focus task.',
-            );
-          }
-          return CustomScrollView(
-            slivers: <Widget>[
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-                sliver: SliverList.builder(
-                  itemCount: _store.tasks.length + 1,
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Text(
-                          'READY TO FOCUS',
-                          style: Theme.of(context).textTheme.labelLarge
-                              ?.copyWith(
-                                letterSpacing: 1.4,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                        ),
-                      );
-                    }
-                    final task = _store.tasks[index - 1];
-                    return _TaskTile(
-                      task: task,
-                      onEdit: () => _openTaskDialog(task),
-                      onStart: task.isCompleted
-                          ? null
-                          : () => _startFocus(task),
-                      onChanged: (value) {
-                        if (value == true &&
-                            _sessionStore.activeSession?.taskId == task.id) {
-                          _sessionStore.completeActiveTask();
-                        } else {
-                          _store.setCompleted(
-                            task,
-                            isCompleted: value ?? false,
-                          );
-                        }
-                      },
-                      onDelete: () => _store.deleteTask(task.id),
-                    );
-                  },
-                ),
-              ),
-            ],
+  Widget build(BuildContext context) => AppScaffold(
+    title: 'Tasks',
+    onBackPressed: () => context.goNamed('home'),
+    floatingActionButton: FloatingActionButton.extended(
+      onPressed: () => context.goNamed('task-create'),
+      icon: const Icon(Icons.add),
+      label: const Text('Add task'),
+    ),
+    body: Observer(
+      builder: (context) {
+        if (_store.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (_store.isEmpty) {
+          return const _TaskMessage(
+            icon: Icons.quiz_outlined,
+            message: 'No study tasks yet. Add a quiz or flashcard task.',
           );
-        },
-      ),
-    );
-  }
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+          itemCount: _store.tasks.length,
+          itemBuilder: (context, index) {
+            final task = _store.tasks[index];
+            return _TaskCard(
+              task: task,
+              onEdit: () => context.goNamed(
+                'task-edit',
+                pathParameters: <String, String>{'taskId': task.id},
+              ),
+              onDelete: () => _store.deleteTask(task.id),
+              onStart: task.studyContent == null || task.isCompleted
+                  ? null
+                  : () => _startFocus(task),
+            );
+          },
+        );
+      },
+    ),
+  );
 }
 
-class _TaskFormDialog extends StatefulWidget {
-  const _TaskFormDialog({required this.store, this.task});
-
-  final TaskStore store;
-  final TaskModel? task;
-
-  @override
-  State<_TaskFormDialog> createState() => _TaskFormDialogState();
-}
-
-class _TaskFormDialogState extends State<_TaskFormDialog> {
-  static const List<int> _presets = <int>[15, 25, 45, 60];
-  late final TextEditingController _titleController;
-  late final TextEditingController _customController;
-  late final FocusNode _titleFocus;
-  late int _duration;
-  bool _custom = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _duration = widget.task?.durationMinutes ?? 25;
-    _custom = !_presets.contains(_duration);
-    _titleController = TextEditingController(text: widget.task?.title);
-    _customController = TextEditingController(
-      text: _custom ? '$_duration' : '',
-    );
-    _titleFocus = FocusNode();
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _customController.dispose();
-    _titleFocus.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    final duration = _custom
-        ? int.tryParse(_customController.text) ?? 0
-        : _duration;
-    final saved = await widget.store.saveTask(
-      id: widget.task?.id,
-      title: _titleController.text,
-      durationMinutes: duration,
-    );
-    if (!mounted) return;
-    if (saved) {
-      Navigator.pop(context);
-    } else if (_titleController.text.trim().isEmpty) {
-      _titleFocus.requestFocus();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.task == null ? 'Create task' : 'Edit task'),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              TextField(
-                controller: _titleController,
-                focusNode: _titleFocus,
-                autofocus: true,
-                maxLength: 120,
-                decoration: const InputDecoration(
-                  labelText: 'Task title',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Time period',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: <Widget>[
-                  for (final minutes in _presets)
-                    ChoiceChip(
-                      label: Text('$minutes min'),
-                      selected: !_custom && _duration == minutes,
-                      onSelected: (_) => setState(() {
-                        _custom = false;
-                        _duration = minutes;
-                      }),
-                    ),
-                  ChoiceChip(
-                    label: const Text('Custom'),
-                    selected: _custom,
-                    onSelected: (_) => setState(() => _custom = true),
-                  ),
-                ],
-              ),
-              if (_custom) ...<Widget>[
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _customController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Minutes (1–1440)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ],
-              Observer(
-                builder: (context) {
-                  final error = widget.store.formError;
-                  if (error == null) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Text(
-                      error,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        Observer(
-          builder: (context) => FilledButton(
-            onPressed: widget.store.isSaving ? null : _save,
-            child: widget.store.isSaving
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(widget.task == null ? 'Create task' : 'Save'),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _TaskTile extends StatelessWidget {
-  const _TaskTile({
+class _TaskCard extends StatelessWidget {
+  const _TaskCard({
     required this.task,
-    required this.onChanged,
-    required this.onDelete,
     required this.onEdit,
+    required this.onDelete,
     this.onStart,
   });
-
   final TaskModel task;
-  final ValueChanged<bool?> onChanged;
-  final VoidCallback onDelete;
   final VoidCallback onEdit;
+  final VoidCallback onDelete;
   final VoidCallback? onStart;
-
   @override
   Widget build(BuildContext context) {
+    final content = task.studyContent;
+    final status = task.isCompleted
+        ? 'Completed'
+        : content == null
+        ? 'Study content required'
+        : 'Ready to study';
     return Card(
+      margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 8, 12, 12),
+        padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            CheckboxListTile(
-              value: task.isCompleted,
-              onChanged: onChanged,
-              title: Text(task.title),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text('${task.durationMinutes} minutes'),
-                  Row(
-                    children: <Widget>[
-                      Icon(
-                        Icons.lock_outline,
-                        size: 15,
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
-                      const SizedBox(width: 4),
-                      const Text('Locks selected apps'),
-                    ],
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    task.title,
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-                ],
-              ),
-              secondary: PopupMenuButton<String>(
-                tooltip: 'Task options',
-                onSelected: (value) => value == 'edit' ? onEdit() : onDelete(),
-                itemBuilder: (_) => const <PopupMenuEntry<String>>[
-                  PopupMenuItem(value: 'edit', child: Text('Edit')),
-                  PopupMenuItem(value: 'delete', child: Text('Delete')),
-                ],
+                ),
+                PopupMenuButton<String>(
+                  tooltip: 'Task options',
+                  onSelected: (value) =>
+                      value == 'edit' ? onEdit() : onDelete(),
+                  itemBuilder: (_) => const <PopupMenuEntry<String>>[
+                    PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              status,
+              style: TextStyle(
+                color: content == null
+                    ? Theme.of(context).colorScheme.error
+                    : Theme.of(context).colorScheme.primary,
               ),
             ),
-            if (onStart != null)
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton.tonalIcon(
+            const SizedBox(height: 8),
+            Text(
+              content == null
+                  ? '${task.durationMinutes} minutes'
+                  : '${content.format == StudyFormat.quiz ? 'Quiz' : 'Flashcards'} · ${content.items.length} ${content.items.length == 1 ? 'item' : 'items'} · ${task.durationMinutes} minutes',
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: <Widget>[
+                OutlinedButton(
+                  onPressed: onEdit,
+                  child: Text(content == null ? 'Add content' : 'Edit'),
+                ),
+                FilledButton.tonalIcon(
                   onPressed: onStart,
                   icon: const Icon(Icons.lock_clock_outlined),
                   label: const Text('Start focus'),
                 ),
-              ),
+              ],
+            ),
           ],
         ),
       ),
@@ -380,36 +184,21 @@ class _TaskTile extends StatelessWidget {
 }
 
 class _TaskMessage extends StatelessWidget {
-  const _TaskMessage({
-    required this.icon,
-    required this.message,
-    this.actionLabel,
-    this.onAction,
-  });
-
+  const _TaskMessage({required this.icon, required this.message});
   final IconData icon;
   final String message;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(icon, size: 48),
-            const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center),
-            if (actionLabel != null && onAction != null) ...<Widget>[
-              const SizedBox(height: 16),
-              FilledButton(onPressed: onAction, child: Text(actionLabel!)),
-            ],
-          ],
-        ),
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 48),
+          const SizedBox(height: 16),
+          Text(message, textAlign: TextAlign.center),
+        ],
       ),
-    );
-  }
+    ),
+  );
 }

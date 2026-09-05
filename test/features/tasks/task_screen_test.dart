@@ -41,50 +41,11 @@ void main() {
     await GetIt.instance.reset();
   });
 
-  testWidgets('opens modal and creates a timed task', (tester) async {
+  testWidgets('shows the study-task empty state', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: TaskScreen()));
     await tester.pump();
 
-    expect(find.textContaining('No tasks yet'), findsOneWidget);
-
-    await tester.tap(find.text('Add task'));
-    await tester.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsOneWidget);
-
-    await tester.enterText(find.byType(TextField).first, 'Review notes');
-    await tester.tap(find.widgetWithText(FilledButton, 'Create task'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Review notes'), findsOneWidget);
-    expect(find.text('25 minutes'), findsOneWidget);
-  });
-
-  testWidgets('cancel leaves task data unchanged', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: TaskScreen()));
-    await tester.pump();
-    await tester.tap(find.text('Add task'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, 'Discard me');
-
-    await tester.tap(find.text('Cancel'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Discard me'), findsNothing);
+    expect(find.textContaining('No study tasks yet'), findsOneWidget);
     expect(taskStore.tasks, isEmpty);
-  });
-
-  testWidgets('invalid title keeps modal open with inline error', (
-    tester,
-  ) async {
-    await tester.pumpWidget(const MaterialApp(home: TaskScreen()));
-    await tester.pump();
-    await tester.tap(find.text('Add task'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Create task'));
-    await tester.pump();
-
-    expect(find.byType(AlertDialog), findsOneWidget);
-    expect(find.text('Enter a task title.'), findsOneWidget);
   });
 }

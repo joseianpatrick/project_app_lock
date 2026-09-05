@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:project_app_lock/data/study_content_model.dart';
 
 part 'task_model.freezed.dart';
 
@@ -10,6 +11,7 @@ abstract class TaskModel with _$TaskModel {
     required int durationMinutes,
     required DateTime createdAt,
     DateTime? completedAt,
+    StudyContentModel? studyContent,
   }) = _TaskModel;
 
   TaskModel._();
@@ -24,6 +26,7 @@ abstract class TaskModel with _$TaskModel {
         DateTime.tryParse(map['createdAt'] as String? ?? '') ??
         DateTime.fromMillisecondsSinceEpoch(0),
     completedAt: DateTime.tryParse(map['completedAt'] as String? ?? ''),
+    studyContent: StudyContentModel.tryFromMap(map['studyContent']),
   );
 
   factory TaskModel.empty() => TaskModel(
@@ -39,5 +42,6 @@ abstract class TaskModel with _$TaskModel {
     'durationMinutes': durationMinutes,
     'createdAt': createdAt.toUtc().toIso8601String(),
     'completedAt': completedAt?.toUtc().toIso8601String(),
+    'studyContent': studyContent?.toMap(),
   };
 }

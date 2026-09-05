@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:project_app_lock/data/task_model.dart';
+import 'package:project_app_lock/data/study_content_model.dart';
 import 'package:project_app_lock/features/tasks/task_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -88,5 +89,57 @@ void main() {
     expect(restored.single.title, 'Persist me');
     expect(restored.single.durationMinutes, 45);
     restoredRepository.dispose();
+  });
+
+  test('persists nested study content with ordered item IDs', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final preferences = await SharedPreferences.getInstance();
+    final firstRepository = TaskRepository(preferences: preferences);
+    await firstRepository.set(
+      'task-1',
+      TaskModel(
+        id: 'task-1',
+        title: 'Study grammar',
+        durationMinutes: 25,
+        createdAt: DateTime.utc(2026),
+        studyContent: const StudyContentModel(
+          format: StudyFormat.quiz,
+          sourceNotes: 'Grammar notes',
+          sourceId: 'manual',
+          items: <StudyItemModel>[
+            StudyItemModel(id: 'one', prompt: 'Prompt 1', answer: 'Answer 1'),
+            StudyItemModel(id: 'two', prompt: 'Prompt 2', answer: 'Answer 2'),
+          ],
+        ),
+      ),
+    );
+    firstRepository.dispose();
+
+    final restoredRepository = TaskRepository(preferences: preferences);
+    final restored = (await restoredRepository.watch().first).single;
+
+    expect(restored.studyContent?.format, StudyFormat.quiz);
+    expect(restored.studyContent?.items.map((item) => item.id), <String>[
+      'one',
+      'two',
+    ]);
+    restoredRepository.dispose();
+  });
+
+  test('loads legacy preference records without study content', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{
+      'tasks':
+          '[{"id":"legacy","title":"Old task","durationMinutes":25,'
+          '"createdAt":"2026-01-01T00:00:00.000Z","completedAt":null}]',
+    });
+    final repository = TaskRepository(
+      preferences: await SharedPreferences.getInstance(),
+    );
+
+    final task = (await repository.watch().first).single;
+
+    expect(task.title, 'Old task');
+    expect(task.studyContent, isNull);
+    repository.dispose();
   });
 }

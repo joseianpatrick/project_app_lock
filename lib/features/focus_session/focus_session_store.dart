@@ -86,6 +86,9 @@ abstract class FocusSessionStoreBase with Store {
     errorMessage = null;
     if (hasActiveSession) return 'Finish the active focus session first.';
     if (task.isCompleted) return 'Completed tasks cannot start a session.';
+    if (task.studyContent == null) {
+      return 'Add study content before starting this task.';
+    }
     if (task.durationMinutes < 1 || task.durationMinutes > 1440) {
       return 'The task duration is outside the supported range.';
     }

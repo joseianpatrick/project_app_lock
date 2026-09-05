@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:project_app_lock/data/repository/repository.dart';
 import 'package:project_app_lock/data/task_model.dart';
+import 'package:project_app_lock/data/study_content_model.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -89,6 +90,9 @@ final class TaskRepository implements Repository<TaskModel> {
       completedAt: data.containsKey('completedAt')
           ? data['completedAt'] as DateTime?
           : current.completedAt,
+      studyContent: data.containsKey('studyContent')
+          ? data['studyContent'] as StudyContentModel?
+          : current.studyContent,
     );
     await _persist();
     _emit();

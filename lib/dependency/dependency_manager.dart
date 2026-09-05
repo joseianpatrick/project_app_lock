@@ -3,12 +3,15 @@ import 'package:project_app_lock/data/lock_session_model.dart';
 import 'package:project_app_lock/data/repository/protected_app_selection_repository.dart';
 import 'package:project_app_lock/data/repository/repository.dart';
 import 'package:project_app_lock/data/task_model.dart';
+import 'package:project_app_lock/data/study_content_source.dart';
 import 'package:project_app_lock/features/focus_session/focus_session_store.dart';
 import 'package:project_app_lock/features/focus_session/lock_session_repository.dart';
 import 'package:project_app_lock/features/protected_apps/protected_app_selection_repository.dart';
 import 'package:project_app_lock/features/protected_apps/protected_apps_store.dart';
 import 'package:project_app_lock/features/tasks/task_repository.dart';
 import 'package:project_app_lock/features/tasks/task_store.dart';
+import 'package:project_app_lock/features/tasks/task_editor_store.dart';
+import 'package:project_app_lock/features/tasks/manual_study_content_source.dart';
 import 'package:project_app_lock/platform/app_lock/installed_apps_gateway.dart';
 import 'package:project_app_lock/platform/app_lock/method_channel_app_lock_gateway.dart';
 import 'package:project_app_lock/platform/app_lock/system_app_lock_gateway.dart';
@@ -21,9 +24,14 @@ final class DependencyManager {
     final preferences = await SharedPreferences.getInstance();
     sl.registerSingleton<SharedPreferences>(preferences);
     setSystemAppLockGateway();
+    setStudyContentSource();
     setTaskStore(preferences);
     setProtectedAppsStore(preferences);
     setFocusSessionStore(preferences);
+  }
+
+  void setStudyContentSource() {
+    sl.registerSingleton<StudyContentSource>(ManualStudyContentSource());
   }
 
   void setSystemAppLockGateway() {
@@ -36,6 +44,12 @@ final class DependencyManager {
     final repository = TaskRepository(preferences: preferences);
     sl.registerSingleton<Repository<TaskModel>>(repository);
     sl.registerSingleton<TaskStore>(TaskStore(taskRepository: repository));
+    sl.registerFactory<TaskEditorStore>(
+      () => TaskEditorStore(
+        taskRepository: sl<Repository<TaskModel>>(),
+        studyContentSource: sl<StudyContentSource>(),
+      ),
+    );
   }
 
   void setProtectedAppsStore(SharedPreferences preferences) {
