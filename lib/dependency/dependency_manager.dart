@@ -1,13 +1,17 @@
 import 'package:get_it/get_it.dart';
 import 'package:project_app_lock/data/lock_session_model.dart';
+import 'package:project_app_lock/data/repository/focus_behavior_settings_repository.dart';
 import 'package:project_app_lock/data/repository/protected_app_selection_repository.dart';
 import 'package:project_app_lock/data/repository/repository.dart';
 import 'package:project_app_lock/data/task_model.dart';
 import 'package:project_app_lock/data/study_content_source.dart';
 import 'package:project_app_lock/features/focus_session/focus_session_store.dart';
 import 'package:project_app_lock/features/focus_session/lock_session_repository.dart';
+import 'package:project_app_lock/features/focus_session/study_attempt_store.dart';
 import 'package:project_app_lock/features/protected_apps/protected_app_selection_repository.dart';
 import 'package:project_app_lock/features/protected_apps/protected_apps_store.dart';
+import 'package:project_app_lock/features/settings/focus_behavior_settings_repository.dart';
+import 'package:project_app_lock/features/settings/settings_store.dart';
 import 'package:project_app_lock/features/tasks/task_repository.dart';
 import 'package:project_app_lock/features/tasks/task_store.dart';
 import 'package:project_app_lock/features/tasks/task_editor_store.dart';
@@ -24,10 +28,13 @@ final class DependencyManager {
     final preferences = await SharedPreferences.getInstance();
     sl.registerSingleton<SharedPreferences>(preferences);
     setSystemAppLockGateway();
+    setFocusBehaviorSettingsRepository(preferences);
     setStudyContentSource();
     setTaskStore(preferences);
     setProtectedAppsStore(preferences);
     setFocusSessionStore(preferences);
+    setStudyAttemptStore();
+    setSettingsStore();
   }
 
   void setStudyContentSource() {
@@ -38,6 +45,21 @@ final class DependencyManager {
     const gateway = MethodChannelAppLockGateway();
     sl.registerSingleton<SystemAppLockGateway>(gateway);
     sl.registerSingleton<InstalledAppsGateway>(gateway);
+  }
+
+  void setFocusBehaviorSettingsRepository(SharedPreferences preferences) {
+    sl.registerSingleton<FocusBehaviorSettingsRepository>(
+      LocalFocusBehaviorSettingsRepository(preferences),
+    );
+  }
+
+  void setSettingsStore() {
+    sl.registerSingleton<SettingsStore>(
+      SettingsStore(
+        settingsRepository: sl<FocusBehaviorSettingsRepository>(),
+        focusSessionStore: sl<FocusSessionStore>(),
+      ),
+    );
   }
 
   void setTaskStore(SharedPreferences preferences) {
@@ -75,6 +97,16 @@ final class DependencyManager {
         selectionRepository: sl<ProtectedAppSelectionRepository>(),
         gateway: sl<SystemAppLockGateway>(),
         installedAppsGateway: sl<InstalledAppsGateway>(),
+        settingsRepository: sl<FocusBehaviorSettingsRepository>(),
+      ),
+    );
+  }
+
+  void setStudyAttemptStore() {
+    sl.registerSingleton<StudyAttemptStore>(
+      StudyAttemptStore(
+        sessionRepository: sl<Repository<LockSessionModel>>(),
+        focusSessionStore: sl<FocusSessionStore>(),
       ),
     );
   }

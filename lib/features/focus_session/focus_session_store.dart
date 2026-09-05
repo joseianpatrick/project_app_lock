@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:mobx/mobx.dart';
 import 'package:project_app_lock/data/lock_session_model.dart';
+import 'package:project_app_lock/data/focus_behavior_settings_model.dart';
+import 'package:project_app_lock/data/repository/focus_behavior_settings_repository.dart';
 import 'package:project_app_lock/data/repository/protected_app_selection_repository.dart';
 import 'package:project_app_lock/data/repository/repository.dart';
 import 'package:project_app_lock/data/task_model.dart';
@@ -19,6 +21,7 @@ abstract class FocusSessionStoreBase with Store {
     required this.selectionRepository,
     required this.gateway,
     required this.installedAppsGateway,
+    required this.settingsRepository,
     DateTime Function()? now,
   }) : now = now ?? DateTime.now;
 
@@ -27,6 +30,7 @@ abstract class FocusSessionStoreBase with Store {
   final ProtectedAppSelectionRepository selectionRepository;
   final SystemAppLockGateway gateway;
   final InstalledAppsGateway installedAppsGateway;
+  final FocusBehaviorSettingsRepository settingsRepository;
   final DateTime Function() now;
 
   @observable
@@ -40,6 +44,9 @@ abstract class FocusSessionStoreBase with Store {
 
   @observable
   String? errorMessage;
+
+  @observable
+  bool lastSessionExpired = false;
 
   StreamSubscription<List<LockSessionModel>>? _subscription;
   Timer? _timer;
@@ -121,6 +128,7 @@ abstract class FocusSessionStoreBase with Store {
   Future<bool> start(TaskModel task) async {
     if (isBusy) return false;
     isBusy = true;
+    lastSessionExpired = false;
     try {
       final validation = await validateStart(task);
       if (validation != null) {
@@ -128,6 +136,7 @@ abstract class FocusSessionStoreBase with Store {
         return false;
       }
       final packageIds = (await selectionRepository.load()).toList()..sort();
+      final settings = await settingsRepository.load();
       final startedAt = now();
       final session = LockSessionModel(
         id: sessionRepository.newId(),
@@ -137,12 +146,21 @@ abstract class FocusSessionStoreBase with Store {
         startedAt: startedAt,
         endsAt: startedAt.add(Duration(minutes: task.durationMinutes)),
         state: LockSessionState.scheduled,
+        durationMinutes: task.durationMinutes,
+        policy: FocusSessionPolicyModel.fromSettings(settings),
+        studyContent: SessionStudyContentModel.fromStudyContent(
+          task.studyContent!,
+        ),
+        studyProgress: StudyProgressModel.empty(),
       );
       await sessionRepository.set(session.id, session);
       try {
         await gateway.startLockSession(
           packageIds: packageIds,
           endsAt: session.endsAt,
+          policy: settings.allowOtherApps
+              ? ExternalAppLockPolicy.selectedOnly
+              : ExternalAppLockPolicy.allEligible,
         );
       } catch (_) {
         await sessionRepository.update(session.id, <String, Object?>{
@@ -165,7 +183,12 @@ abstract class FocusSessionStoreBase with Store {
   Future<bool> completeActiveTask() async {
     final session = activeSession;
     if (session == null || isBusy) return false;
+    if (!_canComplete(session)) {
+      errorMessage = 'Assess every study item before completing the task.';
+      return false;
+    }
     isBusy = true;
+    lastSessionExpired = false;
     try {
       await taskRepository.update(session.taskId, <String, Object?>{
         'completedAt': now(),
@@ -176,8 +199,47 @@ abstract class FocusSessionStoreBase with Store {
     }
   }
 
+  bool _canComplete(LockSessionModel session) {
+    final content = session.studyContent;
+    if (content == null) return true;
+    final progress = session.studyProgress;
+    if (progress == null || progress.currentItemIndex != content.items.length) {
+      return false;
+    }
+    final itemIds = content.items.map((item) => item.id).toSet();
+    if (itemIds.length != content.items.length) return false;
+    final responses = <String, StudyResponseModel>{};
+    for (final response in progress.responses) {
+      if (!itemIds.contains(response.itemId) ||
+          responses.containsKey(response.itemId) ||
+          !response.isRevealed ||
+          response.response.trim().isEmpty) {
+        return false;
+      }
+      responses[response.itemId] = response;
+    }
+    return content.items.every(
+      (item) => responses[item.id]?.assessment != null,
+    );
+  }
+
   @action
   Future<bool> retryUnlock() async {
+    if (isBusy) return false;
+    final session = activeSession;
+    if (session == null) return true;
+    isBusy = true;
+    try {
+      return await _finish(session);
+    } finally {
+      isBusy = false;
+    }
+  }
+
+  /// Ends a session without marking its task complete. This is used only when
+  /// persisted study progress cannot safely be resumed.
+  @action
+  Future<bool> endActiveSession() async {
     if (isBusy) return false;
     final session = activeSession;
     if (session == null) return true;
@@ -220,6 +282,7 @@ abstract class FocusSessionStoreBase with Store {
   Future<void> _reconcile(LockSessionModel session) async {
     if (session.state == LockSessionState.unlockPending) return;
     if (!session.endsAt.isAfter(now())) {
+      runInAction(() => lastSessionExpired = true);
       await _finish(session);
       return;
     }
@@ -229,6 +292,9 @@ abstract class FocusSessionStoreBase with Store {
         await gateway.startLockSession(
           packageIds: session.packageIds,
           endsAt: session.endsAt,
+          policy: session.policy?.allowOtherApps ?? false
+              ? ExternalAppLockPolicy.selectedOnly
+              : ExternalAppLockPolicy.allEligible,
         );
         if (session.state == LockSessionState.scheduled) {
           await sessionRepository.update(session.id, <String, Object?>{
@@ -249,6 +315,7 @@ abstract class FocusSessionStoreBase with Store {
       runInAction(() => currentTime = now());
       final session = activeSession;
       if (session != null && !session.endsAt.isAfter(currentTime)) {
+        runInAction(() => lastSessionExpired = true);
         unawaited(_finish(session));
       }
     });

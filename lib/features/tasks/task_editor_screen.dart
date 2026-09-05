@@ -77,6 +77,7 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               children: <Widget>[
                 TextField(
+                  key: const Key('task-title-field'),
                   controller: _titleController,
                   maxLength: 120,
                   textInputAction: TextInputAction.next,
@@ -87,12 +88,30 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextField(
+                  key: const Key('task-duration-field'),
                   controller: _durationController,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
                     labelText: 'Duration in minutes (1–1440)',
                     border: OutlineInputBorder(),
                   ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    for (final minutes in const <int>[15, 25, 45, 60])
+                      ChoiceChip(
+                        key: ValueKey<String>('duration-$minutes'),
+                        label: Text('$minutes min'),
+                        selected: _store.durationMinutes == minutes,
+                        onSelected: (_) {
+                          _store.setDuration(minutes);
+                          _durationController.text = '$minutes';
+                        },
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -118,6 +137,7 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextField(
+                  key: const Key('task-notes-field'),
                   controller: _notesController,
                   minLines: 3,
                   maxLines: 6,
@@ -159,6 +179,7 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
                   ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
+                  key: const Key('add-study-item'),
                   onPressed: _store.addItem,
                   icon: const Icon(Icons.add),
                   label: const Text('Add item'),
@@ -174,6 +195,7 @@ class _TaskEditorScreenState extends State<TaskEditorScreen> {
                 ],
                 const SizedBox(height: 24),
                 FilledButton(
+                  key: const Key('save-task'),
                   onPressed: _store.isSaving ? null : _save,
                   child: _store.isSaving
                       ? const SizedBox.square(
@@ -249,6 +271,7 @@ class _StudyItemEditor extends StatelessWidget {
             ],
           ),
           TextFormField(
+            key: ValueKey<String>('item-${item.id}-prompt'),
             initialValue: item.prompt,
             onChanged: onPromptChanged,
             minLines: 2,
@@ -261,6 +284,7 @@ class _StudyItemEditor extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           TextFormField(
+            key: ValueKey<String>('item-${item.id}-answer'),
             initialValue: item.answer,
             onChanged: onAnswerChanged,
             minLines: 2,

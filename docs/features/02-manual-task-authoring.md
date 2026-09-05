@@ -1,6 +1,6 @@
 # F02: Manual task authoring
 
-**Status:** In progress  
+**Status:** Done
 **Depends on:** F01
 
 ## Goal

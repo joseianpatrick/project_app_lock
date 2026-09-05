@@ -1,5 +1,4 @@
-abstract interface class ProtectedAppSelectionRepository {
-  Future<Set<String>> load();
+import 'package:project_app_lock/data/repository/repository.dart';
 
-  Future<void> save(Set<String> packageIds);
-}
+abstract interface class ProtectedAppSelectionRepository
+    implements SingleValueRepository<Set<String>> {}

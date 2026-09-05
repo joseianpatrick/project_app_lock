@@ -12,6 +12,7 @@ import 'package:project_app_lock/features/protected_apps/protected_apps_store.da
 import 'package:project_app_lock/features/tasks/task_store.dart';
 
 import '../../fakes/fake_app_lock_gateway.dart';
+import '../../fakes/fake_focus_behavior_settings_repository.dart';
 import '../../fakes/fake_protected_app_selection_repository.dart';
 import '../../fakes/fake_task_repository.dart';
 
@@ -44,6 +45,7 @@ void main() {
       selectionRepository: selectionRepository,
       gateway: gateway,
       installedAppsGateway: gateway,
+      settingsRepository: FakeFocusBehaviorSettingsRepository(),
       now: () => now,
     );
     sl.registerSingleton<TaskStore>(taskStore);

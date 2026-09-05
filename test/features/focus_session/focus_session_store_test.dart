@@ -1,14 +1,17 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:project_app_lock/data/focus_behavior_settings_model.dart';
 import 'package:project_app_lock/data/lock_session_model.dart';
 import 'package:project_app_lock/data/protected_app_model.dart';
 import 'package:project_app_lock/data/study_content_model.dart';
 import 'package:project_app_lock/data/task_model.dart';
 import 'package:project_app_lock/features/focus_session/focus_session_store.dart';
 import 'package:project_app_lock/features/focus_session/lock_session_repository.dart';
+import 'package:project_app_lock/platform/app_lock/system_app_lock_gateway.dart';
 
 import '../../fakes/fake_app_lock_gateway.dart';
+import '../../fakes/fake_focus_behavior_settings_repository.dart';
 import '../../fakes/fake_protected_app_selection_repository.dart';
 import '../../fakes/fake_task_repository.dart';
 
@@ -17,6 +20,7 @@ void main() {
   late FakeTaskRepository taskRepository;
   late FakeProtectedAppSelectionRepository selectionRepository;
   late FakeAppLockGateway gateway;
+  late FakeFocusBehaviorSettingsRepository settingsRepository;
   late FocusSessionStore store;
   final now = DateTime.utc(2026, 9, 4, 8);
   final task = TaskModel(
@@ -46,12 +50,14 @@ void main() {
         ProtectedAppModel(packageId: 'a.app', displayName: 'A'),
         ProtectedAppModel(packageId: 'b.app', displayName: 'B'),
       ];
+    settingsRepository = FakeFocusBehaviorSettingsRepository();
     store = FocusSessionStore(
       sessionRepository: sessionRepository,
       taskRepository: taskRepository,
       selectionRepository: selectionRepository,
       gateway: gateway,
       installedAppsGateway: gateway,
+      settingsRepository: settingsRepository,
       now: () => now,
     );
     await taskRepository.set(task.id, task);
@@ -87,8 +93,68 @@ void main() {
     expect(gateway.startCalls, 1);
     expect(gateway.startedPackageIds, ['a.app', 'b.app']);
     expect(gateway.startedEndsAt, now.add(const Duration(minutes: 25)));
+    expect(gateway.startedPolicy, ExternalAppLockPolicy.allEligible);
     expect(store.activeSession?.state, LockSessionState.active);
+    expect(store.activeSession?.policy?.lockToTaskScreen, isTrue);
+    expect(store.activeSession?.policy?.allowOtherApps, isFalse);
+    expect(store.activeSession?.policy?.backButtonEnabled, isFalse);
     expect(store.remaining, const Duration(minutes: 25));
+    expect(store.activeSession?.studyContent?.format, StudyFormat.quiz);
+    expect(store.activeSession?.studyContent?.items.single.prompt, 'Prompt');
+    expect(store.activeSession?.durationMinutes, 25);
+  });
+
+  test('session policy remains unchanged after settings are changed', () async {
+    await store.start(task);
+    await Future<void>.delayed(Duration.zero);
+
+    await settingsRepository.save(
+      const FocusBehaviorSettingsModel(
+        lockToTaskScreen: false,
+        allowOtherApps: true,
+        backButtonEnabled: true,
+      ),
+    );
+
+    expect(
+      store.activeSession?.policy,
+      FocusSessionPolicyModel.fromSettings(
+        FocusBehaviorSettingsModel.defaults(),
+      ),
+    );
+  });
+
+  test('uses selected-only enforcement when other apps are allowed', () async {
+    await settingsRepository.save(
+      const FocusBehaviorSettingsModel(
+        lockToTaskScreen: true,
+        allowOtherApps: true,
+        backButtonEnabled: false,
+      ),
+    );
+
+    expect(await store.start(task), isTrue);
+
+    expect(gateway.startedPolicy, ExternalAppLockPolicy.selectedOnly);
+  });
+
+  test('session study snapshot is isolated from later task edits', () async {
+    await store.start(task);
+    await Future<void>.delayed(Duration.zero);
+
+    await taskRepository.update(task.id, <String, Object?>{
+      'studyContent': const StudyContentModel(
+        format: StudyFormat.flashcards,
+        sourceNotes: 'Changed notes',
+        sourceId: 'manual',
+        items: <StudyItemModel>[
+          StudyItemModel(id: 'changed', prompt: 'Changed', answer: 'Changed'),
+        ],
+      ),
+    });
+
+    expect(store.activeSession?.studyContent?.format, StudyFormat.quiz);
+    expect(store.activeSession?.studyContent?.items.single.id, 'one');
   });
 
   test('concurrent start calls create only one session', () async {
@@ -126,21 +192,24 @@ void main() {
     expect(store.errorMessage, contains('could not start'));
   });
 
-  test('completing active task persists completion before unlock', () async {
-    await store.start(task);
-    await Future<void>.delayed(Duration.zero);
+  test(
+    'new study sessions cannot complete before every item is assessed',
+    () async {
+      await store.start(task);
+      await Future<void>.delayed(Duration.zero);
 
-    expect(await store.completeActiveTask(), isTrue);
-    await Future<void>.delayed(Duration.zero);
+      expect(await store.completeActiveTask(), isFalse);
+      await Future<void>.delayed(Duration.zero);
 
-    expect((await taskRepository.getById(task.id))?.isCompleted, isTrue);
-    expect(gateway.stopCalls, 1);
-    expect(store.activeSession, isNull);
-  });
+      expect((await taskRepository.getById(task.id))?.isCompleted, isFalse);
+      expect(gateway.stopCalls, 0);
+    },
+  );
 
   test('unlock failure retains recoverable state', () async {
     await store.start(task);
     await Future<void>.delayed(Duration.zero);
+    await _assessOnlyItem(sessionRepository, store);
     gateway.failStop = true;
 
     expect(await store.completeActiveTask(), isFalse);
@@ -152,6 +221,7 @@ void main() {
   test('concurrent retry taps invoke native unlock only once', () async {
     await store.start(task);
     await Future<void>.delayed(Duration.zero);
+    await _assessOnlyItem(sessionRepository, store);
     gateway.failStop = true;
     await store.completeActiveTask();
     await Future<void>.delayed(Duration.zero);
@@ -191,6 +261,7 @@ void main() {
       selectionRepository: selectionRepository,
       gateway: gateway,
       installedAppsGateway: gateway,
+      settingsRepository: FakeFocusBehaviorSettingsRepository(),
       now: () => now,
     );
 
@@ -222,6 +293,7 @@ void main() {
       selectionRepository: selectionRepository,
       gateway: gateway,
       installedAppsGateway: gateway,
+      settingsRepository: FakeFocusBehaviorSettingsRepository(),
       now: () => now,
     );
 
@@ -232,4 +304,25 @@ void main() {
     expect(gateway.stopCalls, 1);
     expect(store.activeSession, isNull);
   });
+}
+
+Future<void> _assessOnlyItem(
+  LockSessionRepository repository,
+  FocusSessionStore store,
+) async {
+  final session = store.activeSession!;
+  await repository.update(session.id, <String, Object?>{
+    'studyProgress': const StudyProgressModel(
+      currentItemIndex: 1,
+      responses: <StudyResponseModel>[
+        StudyResponseModel(
+          itemId: 'one',
+          response: 'Response',
+          isRevealed: true,
+          assessment: StudyAssessment.correct,
+        ),
+      ],
+    ),
+  });
+  await Future<void>.delayed(Duration.zero);
 }

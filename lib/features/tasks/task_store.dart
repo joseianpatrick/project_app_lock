@@ -61,10 +61,8 @@ abstract class TaskStoreBase with Store {
   }
 
   @action
-  Future<bool> addTask(String title, {int durationMinutes = 25}) => saveTask(
-    title: title,
-    durationMinutes: durationMinutes,
-  );
+  Future<bool> addTask(String title, {int durationMinutes = 25}) =>
+      saveTask(title: title, durationMinutes: durationMinutes);
 
   @action
   Future<bool> saveTask({
@@ -119,14 +117,6 @@ abstract class TaskStoreBase with Store {
 
   @action
   void clearFormError() => formError = null;
-
-  @action
-  Future<void> setCompleted(TaskModel task, {required bool isCompleted}) async {
-    errorMessage = null;
-    await taskRepository.update(task.id, <String, Object?>{
-      'completedAt': isCompleted ? DateTime.now() : null,
-    });
-  }
 
   @action
   Future<void> deleteTask(String id) async {

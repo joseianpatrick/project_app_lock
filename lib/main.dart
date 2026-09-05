@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:project_app_lock/dependency/dependency_manager.dart';
+import 'package:project_app_lock/features/focus_session/focus_session_store.dart';
 import 'package:project_app_lock/router/app_router.dart';
 import 'package:project_app_lock/shared/theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,11 +10,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DependencyManager().init();
-  runApp(const MainApp());
+  runApp(MainApp(router: AppRouter(sl<FocusSessionStore>())));
 }
 
 class MainApp extends StatefulWidget {
-  const MainApp({super.key});
+  const MainApp({required this.router, super.key});
+
+  final AppRouter router;
 
   @override
   State<MainApp> createState() => _MainAppState();
@@ -28,6 +31,12 @@ class _MainAppState extends State<MainApp> {
   void initState() {
     super.initState();
     unawaited(_loadThemeMode());
+  }
+
+  @override
+  void dispose() {
+    widget.router.dispose();
+    super.dispose();
   }
 
   Future<void> _loadThemeMode() async {
@@ -61,7 +70,7 @@ class _MainAppState extends State<MainApp> {
         onToggle: _toggleTheme,
         child: child ?? const SizedBox.shrink(),
       ),
-      routerConfig: appRouter,
+      routerConfig: widget.router.router,
     );
   }
 }

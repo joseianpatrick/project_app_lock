@@ -49,10 +49,7 @@ void main() {
   });
 
   test('saveTask rejects durations outside 1 minute to 24 hours', () async {
-    expect(
-      await store.saveTask(title: 'Read', durationMinutes: 0),
-      isFalse,
-    );
+    expect(await store.saveTask(title: 'Read', durationMinutes: 0), isFalse);
     expect(store.formError, contains('1 minute'));
   });
 
@@ -86,18 +83,6 @@ void main() {
     expect(repository.setCalls, 1);
     gate.complete();
     expect(await first, isTrue);
-  });
-
-  test('completing every task enables unlocking', () async {
-    store.initialize();
-    await store.addTask('Read chapter');
-    await Future<void>.delayed(Duration.zero);
-
-    await store.setCompleted(store.tasks.single, isCompleted: true);
-    await Future<void>.delayed(Duration.zero);
-
-    expect(store.pendingCount, 0);
-    expect(store.canUnlock, isTrue);
   });
 
   test('deleteTask removes an existing task', () async {

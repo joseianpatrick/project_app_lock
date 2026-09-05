@@ -1,6 +1,6 @@
 # F06: External-app restriction
 
-**Status:** Planned  
+**Status:** Done
 **Depends on:** F03, F04
 
 ## Goal
@@ -55,4 +55,3 @@ Apply the active session's external-app policy on Android and restore Focus Lock
 - Never recursively block Focus Lock itself.
 - Never use this feature to suppress emergency, phone, authorization, accessibility settings, or essential system recovery paths.
 - If eligibility cannot be determined safely, allow the package and record/report the recoverable enforcement limitation.
-

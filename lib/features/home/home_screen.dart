@@ -32,6 +32,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       title: 'Dashboard',
+      actions: <Widget>[
+        IconButton(
+          tooltip: 'Focus behavior settings',
+          onPressed: () => context.goNamed('settings'),
+          icon: const Icon(Icons.settings_outlined),
+        ),
+      ],
       body: CustomScrollView(
         slivers: <Widget>[
           SliverPadding(

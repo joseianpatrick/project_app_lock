@@ -42,11 +42,16 @@ final class MethodChannelAppLockGateway
   Future<void> startLockSession({
     required List<String> packageIds,
     required DateTime endsAt,
+    required ExternalAppLockPolicy policy,
   }) {
     return _channel.invokeMethod<void>('startLockSession', <String, Object?>{
       'packageIds': packageIds,
       'endsAt': endsAt.toUtc().toIso8601String(),
       'endsAtEpochMillis': endsAt.millisecondsSinceEpoch,
+      'externalAppPolicy': switch (policy) {
+        ExternalAppLockPolicy.selectedOnly => 'selected_only',
+        ExternalAppLockPolicy.allEligible => 'all_eligible',
+      },
     });
   }
 

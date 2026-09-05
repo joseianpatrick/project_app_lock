@@ -117,11 +117,20 @@ class MainActivity : FlutterActivity() {
         }
         val packageIds = call.argument<List<String>>("packageIds").orEmpty().toSet()
         val endsAt = call.argument<Number>("endsAtEpochMillis")?.toLong()
+        val policy = FocusLockExternalPolicy.fromChannelValue(
+            call.argument<String>("externalAppPolicy"),
+        )
+        if (policy == null) {
+            FocusLockSessionStorage.clear(this)
+            result.error("invalid_external_policy", "A supported external app policy is required.", null)
+            return
+        }
         if (packageIds.isEmpty() || endsAt == null || endsAt <= System.currentTimeMillis()) {
+            FocusLockSessionStorage.clear(this)
             result.error("invalid_session", "A non-empty app list and future end time are required.", null)
             return
         }
-        FocusLockSessionStorage.save(this, packageIds, endsAt)
+        FocusLockSessionStorage.save(this, packageIds, endsAt, policy)
         result.success(null)
     }
 

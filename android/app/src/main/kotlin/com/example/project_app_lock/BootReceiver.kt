@@ -7,8 +7,7 @@ import android.content.Intent
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action == Intent.ACTION_BOOT_COMPLETED) {
-            // Reading any package reconciles and clears an expired persisted session.
-            FocusLockSessionStorage.isLocked(context, "")
+            FocusLockSessionStorage.reconcileExpiry(context)
         }
     }
 }

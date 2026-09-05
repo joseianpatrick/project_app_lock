@@ -1,6 +1,6 @@
 # F05: Focus-only in-app navigation
 
-**Status:** Planned  
+**Status:** Done
 **Depends on:** F03, F04
 
 ## Goal
@@ -48,4 +48,3 @@ Make the active task the only Focus Lock screen available when the session's `lo
 ## Platform limitation
 
 This feature confines navigation inside Focus Lock. It does not disable Android Home, Recents, notifications, or power controls; external-app behavior belongs to F06.
-

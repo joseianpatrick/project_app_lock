@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Focus Lock</string>
-    <string name="accessibility_service_description">Detects when a selected app opens during an active focus session and displays the Focus Lock blocking screen.</string>
+    <string name="accessibility_service_description">During an active focus session, detects configured distracting apps and returns you to Focus Lock. Emergency, phone, permission, accessibility, settings, and essential system surfaces are not restricted.</string>
     <string name="focus_lock_brand">Focus Lock</string>
     <string name="focus_session_active">Focus session active</string>
     <string name="focus_blocked_title">This app is locked</string>

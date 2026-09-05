@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'dart:async';
 import 'package:project_app_lock/data/study_content_model.dart';
 import 'package:project_app_lock/features/tasks/manual_study_content_source.dart';
 import 'package:project_app_lock/features/tasks/task_editor_store.dart';
@@ -68,4 +69,46 @@ void main() {
       expect(updated.studyContent?.format, StudyFormat.quiz);
     },
   );
+
+  test('prevents duplicate saves while persistence is pending', () async {
+    store
+      ..setTitle('Study')
+      ..setSourceNotes('Notes')
+      ..addItem()
+      ..updateItem(store.items.single.id, prompt: 'Prompt', answer: 'Answer');
+    final gate = Completer<void>();
+    repository.setGate = gate;
+
+    final first = store.save();
+    await Future<void>.delayed(Duration.zero);
+    expect(store.isSaving, isTrue);
+    expect(await store.save(), isFalse);
+    expect(repository.setCalls, 1);
+
+    gate.complete();
+    expect(await first, isTrue);
+  });
+
+  test('keeps the draft and reports a repository failure', () async {
+    store
+      ..setTitle('Study')
+      ..setSourceNotes('Notes')
+      ..addItem()
+      ..updateItem(store.items.single.id, prompt: 'Prompt', answer: 'Answer');
+    repository.failSet = true;
+
+    expect(await store.save(), isFalse);
+    expect(store.errorMessage, 'Could not save the task. Try again.');
+    expect(store.title, 'Study');
+    expect(store.items, hasLength(1));
+  });
+
+  test('reports missing and unreadable edit targets', () async {
+    await store.load('missing');
+    expect(store.errorMessage, 'This task no longer exists.');
+
+    repository.failGet = true;
+    await store.load('another');
+    expect(store.errorMessage, 'Could not load this task.');
+  });
 }

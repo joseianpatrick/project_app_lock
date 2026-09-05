@@ -1,6 +1,6 @@
 # F03: Focus-behavior settings
 
-**Status:** Planned  
+**Status:** Done
 **Depends on:** None
 
 ## Goal
@@ -51,4 +51,3 @@ Let users configure the behavior applied to future focus sessions without allowi
 
 - Router enforcement of the policy; covered by F05.
 - Native external-app enforcement; covered by F06.
-

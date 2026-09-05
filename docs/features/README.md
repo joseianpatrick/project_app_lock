@@ -7,11 +7,11 @@ This directory breaks the [quiz, flashcard, and focus-behavior plan](../quiz-fla
 | ID | Feature | Status | Depends on |
 | --- | --- | --- | --- |
 | F01 | [Study-content foundation](01-study-content-foundation.md) | Done | None |
-| F02 | [Manual task authoring](02-manual-task-authoring.md) | In progress | F01 |
-| F03 | [Focus-behavior settings](03-focus-behavior-settings.md) | Planned | None |
-| F04 | [Active quiz and flashcard session](04-active-study-session.md) | Planned | F01, F02, F03 |
-| F05 | [Focus-only in-app navigation](05-focus-only-navigation.md) | Planned | F03, F04 |
-| F06 | [External-app restriction](06-external-app-restriction.md) | Planned | F03, F04 |
+| F02 | [Manual task authoring](02-manual-task-authoring.md) | Done | F01 |
+| F03 | [Focus-behavior settings](03-focus-behavior-settings.md) | Done | None |
+| F04 | [Active quiz and flashcard session](04-active-study-session.md) | Done | F01, F02, F03 |
+| F05 | [Focus-only in-app navigation](05-focus-only-navigation.md) | Done | F03, F04 |
+| F06 | [External-app restriction](06-external-app-restriction.md) | Done | F03, F04 |
 
 Allowed status values are **Planned**, **In progress**, **Blocked**, and **Done**. A feature becomes **Done** only when its acceptance criteria pass, generated code is current, and its required tests are green.
 

@@ -21,6 +21,7 @@ final class FakeAppLockGateway
   Completer<void>? stopGate;
   List<String>? startedPackageIds;
   DateTime? startedEndsAt;
+  ExternalAppLockPolicy? startedPolicy;
 
   @override
   Future<AppLockCapability> getCapability() async {
@@ -39,11 +40,13 @@ final class FakeAppLockGateway
   Future<void> startLockSession({
     required List<String> packageIds,
     required DateTime endsAt,
+    required ExternalAppLockPolicy policy,
   }) async {
     startCalls += 1;
     if (failStart) throw StateError('start failed');
     startedPackageIds = packageIds;
     startedEndsAt = endsAt;
+    startedPolicy = policy;
   }
 
   @override

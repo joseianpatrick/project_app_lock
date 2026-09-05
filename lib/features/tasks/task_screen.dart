@@ -33,12 +33,21 @@ class _TaskScreenState extends State<TaskScreen> {
       ).showSnackBar(SnackBar(content: Text(validation)));
       return;
     }
+    final selectedAppCount = await _sessionStore.getSelectedAppCount();
+    if (!mounted) return;
+    final settings = await _sessionStore.settingsRepository.load();
+    if (!mounted) return;
     final confirmed = await showAdaptiveDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Start focus?'),
         content: Text(
-          '${task.title}\n\nYour selected apps will be locked for ${task.durationMinutes} minutes.',
+          '${task.title}\n\nYour selected apps will be locked for ${task.durationMinutes} minutes.\n\n'
+          'Focus behavior for this session:\n'
+          '• Lock navigation to task: ${settings.lockToTaskScreen ? 'On' : 'Off'}\n'
+          '• Allow other apps: ${settings.allowOtherApps ? 'On' : 'Off'}\n'
+          '• Enable Back button: ${settings.backButtonEnabled ? 'On' : 'Off'}\n\n'
+          '$selectedAppCount selected app${selectedAppCount == 1 ? '' : 's'} will be locked.',
         ),
         actions: <Widget>[
           TextButton(

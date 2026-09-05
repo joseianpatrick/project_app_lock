@@ -1,6 +1,6 @@
 # F04: Active quiz and flashcard session
 
-**Status:** Planned  
+**Status:** Done
 **Depends on:** F01, F02, F03
 
 ## Goal
@@ -62,4 +62,3 @@ Turn an active focus session into a resumable quiz or flashcard attempt. Complet
 - Attempt-store tests for both modes, empty responses, repeat actions, progress, summaries, persistence failures, and restoration.
 - Focus-session tests for snapshot isolation, completion ordering, expiry, unlock retry, and legacy fallback.
 - Widget tests for quiz, flashcard, summary, loading/error, expiry, restoration, keyboard use, semantics, and 1.3 text scaling.
-

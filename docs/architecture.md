@@ -67,7 +67,7 @@ The channel name is `com.focuslock/app_lock`. Its calls are:
 | `startLockSession` | Implemented on Android | `{packageIds, endsAt, endsAtEpochMillis}` | success or typed `PlatformException` |
 | `stopLockSession` | Implemented on Android | none | success or typed `PlatformException` |
 
-Android uses an opt-in accessibility service to detect selected foreground apps and present a blocking activity while a persisted session is active. Permission onboarding opens system Accessibility settings, session enforcement state survives process death and reboot, and expired state is reconciled. Accessibility API use requires a Google Play policy and disclosure review before distribution.
+Android uses an opt-in accessibility service to return Focus Lock to the foreground while a persisted session is active. Sessions use either selected-app enforcement or best-effort enforcement of eligible launchable third-party apps; system UI, launchers, settings, phone/emergency, permissions, accessibility, and recovery surfaces are always excluded. Permission onboarding opens system Accessibility settings, session enforcement state survives process death and reboot, and expired state is reconciled. Accessibility API use requires a Google Play policy and disclosure review before distribution.
 
 iOS implements the same channel as a placeholder. It reports unavailable and returns `unsupported_platform` for lock operations. A future implementation must remain behind the same gateway and evaluate Apple's Family Controls, Managed Settings, Device Activity APIs, entitlement approval, and App Store rules. Flutter features render capability state; they do not branch directly on `Platform.isIOS`.
 
