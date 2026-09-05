@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <mask id="body" maskUnits="userSpaceOnUse" x="-400" y="-400" width="1800" height="1800">
+      <rect x="-400" y="-400" width="1800" height="1800" fill="#fff"/>
+      <circle cx="468" cy="558" r="120" fill="#000"/>
+    </mask>
+    <mask id="badge" maskUnits="userSpaceOnUse" x="-400" y="-400" width="1800" height="1800">
+      <circle cx="468" cy="558" r="104" fill="#fff"/>
+      <path d="M468 506 V558 H506"
+            fill="none" stroke="#000" stroke-width="22"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <g transform="translate(198.27 203.87) scale(0.93373)" fill="#000000">
+    <path d="M180 260 V150 A120 120 0 0 1 420 150 V260"
+          fill="none" stroke="#000000" stroke-width="64" stroke-linecap="round"/>
+    <rect x="100" y="260" width="400" height="320" rx="60" mask="url(#body)"/>
+    <circle cx="468" cy="558" r="104" mask="url(#badge)"/>
+  </g>
+</svg>

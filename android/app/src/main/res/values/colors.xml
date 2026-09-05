@@ -6,4 +6,5 @@
     <color name="focus_on_primary">#FFFFFF</color>
     <color name="focus_text_primary">#1D1B20</color>
     <color name="focus_text_secondary">#49454F</color>
+	<color name="ic_launcher_background">#F0EDFB</color>
 </resources>
