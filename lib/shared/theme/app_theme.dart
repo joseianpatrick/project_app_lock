@@ -87,22 +87,3 @@ ThemeData _buildTheme({
     useMaterial3: true,
   );
 }
-
-class AppThemeScope extends InheritedWidget {
-  const AppThemeScope({
-    required this.isDark,
-    required this.onToggle,
-    required super.child,
-    super.key,
-  });
-
-  final bool isDark;
-  final VoidCallback onToggle;
-
-  static AppThemeScope? maybeOf(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<AppThemeScope>();
-
-  @override
-  bool updateShouldNotify(AppThemeScope oldWidget) =>
-      isDark != oldWidget.isDark || onToggle != oldWidget.onToggle;
-}

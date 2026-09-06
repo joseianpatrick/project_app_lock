@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:project_app_lock/shared/theme/app_theme.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:project_app_lock/dependency/dependency_manager.dart';
+import 'package:project_app_lock/shared/theme/theme_store.dart';
 
 /// Shared page scaffold for screens hosted by [AppShell].
 class AppScaffold extends StatelessWidget {
@@ -22,19 +24,21 @@ class AppScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeScope = AppThemeScope.maybeOf(context);
-    final themeActions = themeScope == null
+    final themeStore = sl.isRegistered<ThemeStore>() ? sl<ThemeStore>() : null;
+    final themeActions = themeStore == null
         ? const <Widget>[]
         : <Widget>[
-            IconButton(
-              tooltip: themeScope.isDark
-                  ? 'Switch to light mode'
-                  : 'Switch to dark mode',
-              onPressed: themeScope.onToggle,
-              icon: Icon(
-                themeScope.isDark
-                    ? Icons.light_mode_outlined
-                    : Icons.dark_mode_outlined,
+            Observer(
+              builder: (_) => IconButton(
+                tooltip: themeStore.isDark
+                    ? 'Switch to light mode'
+                    : 'Switch to dark mode',
+                onPressed: themeStore.toggle,
+                icon: Icon(
+                  themeStore.isDark
+                      ? Icons.light_mode_outlined
+                      : Icons.dark_mode_outlined,
+                ),
               ),
             ),
           ];

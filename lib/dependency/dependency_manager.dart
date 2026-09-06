@@ -19,6 +19,7 @@ import 'package:project_app_lock/features/tasks/manual_study_content_source.dart
 import 'package:project_app_lock/platform/app_lock/installed_apps_gateway.dart';
 import 'package:project_app_lock/platform/app_lock/method_channel_app_lock_gateway.dart';
 import 'package:project_app_lock/platform/app_lock/system_app_lock_gateway.dart';
+import 'package:project_app_lock/shared/theme/theme_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final GetIt sl = GetIt.instance;
@@ -27,6 +28,7 @@ final class DependencyManager {
   Future<void> init() async {
     final preferences = await SharedPreferences.getInstance();
     sl.registerSingleton<SharedPreferences>(preferences);
+    setThemeStore(preferences);
     setSystemAppLockGateway();
     setFocusBehaviorSettingsRepository(preferences);
     setStudyContentSource();
@@ -36,6 +38,9 @@ final class DependencyManager {
     setStudyAttemptStore();
     setSettingsStore();
   }
+
+  void setThemeStore(SharedPreferences preferences) =>
+      sl.registerSingleton<ThemeStore>(ThemeStore(preferences));
 
   void setStudyContentSource() {
     sl.registerSingleton<StudyContentSource>(ManualStudyContentSource());
