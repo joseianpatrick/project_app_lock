@@ -6,6 +6,7 @@ import 'package:project_app_lock/dependency/dependency_manager.dart';
 import 'package:project_app_lock/features/focus_session/focus_session_store.dart';
 import 'package:project_app_lock/features/focus_session/lock_session_repository.dart';
 import 'package:project_app_lock/features/focus_session/study_attempt_store.dart';
+import 'package:project_app_lock/features/protected_apps/protected_apps_store.dart';
 import 'package:project_app_lock/features/settings/settings_store.dart';
 import 'package:project_app_lock/features/tasks/task_store.dart';
 import 'package:project_app_lock/router/app_router.dart';
@@ -39,6 +40,12 @@ void main() {
       now: () => now,
     );
     sl.registerSingleton<FocusSessionStore>(store);
+    sl.registerSingleton<ProtectedAppsStore>(
+      ProtectedAppsStore(
+        gateway: gateway,
+        selectionRepository: FakeProtectedAppSelectionRepository(),
+      ),
+    );
     sl.registerSingleton<StudyAttemptStore>(
       StudyAttemptStore(
         sessionRepository: sessionRepository,
@@ -138,4 +145,25 @@ void main() {
     store.dispose();
   });
 
+  testWidgets('system back from a tab returns home instead of exiting', (
+    tester,
+  ) async {
+    appRouter = AppRouter(store, initialLocation: '/focus-session');
+
+    await tester.pumpWidget(
+      MaterialApp.router(routerConfig: appRouter!.router),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_back), findsNothing);
+
+    final handled = await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(handled, isTrue);
+    expect(appRouter!.router.routeInformationProvider.value.uri.path, '/');
+    store.dispose();
+  });
 }

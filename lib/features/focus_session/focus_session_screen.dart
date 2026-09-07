@@ -483,6 +483,7 @@ class _NoSession extends StatelessWidget {
   const _NoSession();
   @override
   Widget build(BuildContext context) => const Scaffold(
+    appBar: _SessionAppBar(),
     body: _StudyMessage(
       icon: Icons.timer_off_outlined,
       message: 'There is no active focus session.',
@@ -494,11 +495,21 @@ class _ExpiredSession extends StatelessWidget {
   const _ExpiredSession();
   @override
   Widget build(BuildContext context) => const Scaffold(
+    appBar: _SessionAppBar(),
     body: _StudyMessage(
       icon: Icons.timer_off_outlined,
       message: 'Time expired. Your task was not marked complete.',
     ),
   );
+}
+
+class _SessionAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const _SessionAppBar();
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  @override
+  Widget build(BuildContext context) =>
+      AppBar(title: const Text('Focus session'));
 }
 
 class _LoadingBody extends StatelessWidget {

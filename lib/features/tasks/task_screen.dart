@@ -69,7 +69,6 @@ class _TaskScreenState extends State<TaskScreen> {
   @override
   Widget build(BuildContext context) => AppScaffold(
     title: 'Tasks',
-    onBackPressed: () => context.goNamed('home'),
     floatingActionButton: FloatingActionButton.extended(
       onPressed: () => context.goNamed('task-create'),
       icon: const Icon(Icons.add),

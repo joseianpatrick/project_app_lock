@@ -84,12 +84,12 @@ final class AppRouter {
               name: 'apps-to-lock',
               builder: (context, state) => const ProtectedAppsScreen(),
             ),
+            GoRoute(
+              path: '/focus-session',
+              name: 'focus-session',
+              builder: (context, state) => const FocusSessionScreen(),
+            ),
           ],
-        ),
-        GoRoute(
-          path: '/focus-session',
-          name: 'focus-session',
-          builder: (context, state) => const FocusSessionScreen(),
         ),
       ],
     );

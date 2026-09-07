@@ -58,7 +58,6 @@ class _ProtectedAppsScreenState extends State<ProtectedAppsScreen>
   Widget build(BuildContext context) {
     return AppScaffold(
       title: 'Apps To Lock',
-      onBackPressed: () => Navigator.maybePop(context),
       bottomNavigationBar: Observer(
         builder: (context) {
           if (_store.capability?.isAvailable != true) {
